@@ -1,2 +1,3 @@
 @echo off
-tcc zeit.c -luser32 && zeit.exe
+tcc zeit.c icon.res -luser32
+pause

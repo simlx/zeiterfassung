@@ -5,6 +5,7 @@
 #include <conio.h>
 #include <string.h>
 #include <time.h>
+#include <stdlib.h>
 
 HANDLE console;	
 DWORD bytesWritten;
@@ -68,12 +69,12 @@ void MoveTo(int x, int y) {
 }
 
 /**
-* Arbeitszeiten zu Datei speichern 
+* Arbeitszeiten zu Datei speichern und exportieren 
 */
-void SaveToFile() {
+void Save() {
     FILE *file = fopen("arbeitszeit.txt","w");
     if (file == NULL) {
-        PrintAt(2,18,"DATEI KONNTE NICHT GEÃ–FFNET WERDEN.");  
+        PrintAt(2,18,"DATEI KONNTE NICHT GEÖFFNET WERDEN.");  
         return;
     }
     fprintf(file, "%s\n", ARBEIT_START);
@@ -82,6 +83,24 @@ void SaveToFile() {
     fprintf(file, "%s\n", ARBEIT_ENDE);
 
     fclose(file);
+    
+    FILE *file2 = fopen("zeiten.csv","w");
+    if (file2 == NULL) {
+        PrintAt(2,18,"CSV KONNTE NICHT GEÖFFNET WERDEN.");  
+        return;
+    }
+    time_t now = time(NULL);
+    struct tm *t = localtime(&now);
+
+    char datum[20];
+    strftime(datum, sizeof(datum), "%Y-%m-%d", t);
+
+    fprintf(file2, "1,%s,%s,%s,%s,%s,-1\n", datum, ARBEIT_START, PAUSE_START, PAUSE_ENDE, ARBEIT_ENDE);
+    fclose(file2);
+    
+    MoveTo(2,22);
+    
+    int result = system("timeservice.exe *.xlsx zeiten.csv");
 }
 
 /**
@@ -90,7 +109,7 @@ void SaveToFile() {
 void LoadFromFile() {
     FILE *file = fopen("arbeitszeit.txt","r");
     if (file == NULL) {
-        PrintAt(2,18,"DATEI KONNTE NICHT GEÃ–FFNET WERDEN.");  
+        PrintAt(2,18,"DATEI KONNTE NICHT GEÖFFNET WERDEN.");  
         return;
     }
 
@@ -170,7 +189,6 @@ void PrintTimes() {
 
 int main() {
 
-
     // Arbeitszeit laden
     LoadFromFile();
 
@@ -178,8 +196,8 @@ int main() {
 	
     ClearScreen();
 
-    int x = 52;
-    int y = 16;
+    int x = 55;
+    int y = 20;
     
     DrawLine((COORD){0,1},(COORD){x,1},"-");
     DrawLine((COORD){1,1},(COORD){1,y},"|");
@@ -191,22 +209,22 @@ int main() {
     PrintAt(3, 5,"F2 - Pause Anfang");         // 60
     PrintAt(3, 6,"F3 - Pause Ende");           // 61
     PrintAt(3, 7,"F4 - Arbeitszeit Ende");     // 62
-    PrintAt(30,5,"F5 - Synchronisieren");      // 63
-    PrintAt(3,9," Z - Aktuelle Zeit Setzen");
-    PrintAt(3,10,"Enter - Speichern");
+    PrintAt(30,4,"F5 - Speichern");      // 63
+    PrintAt(30,9,"A  - Aktuelle Uhrzeit");
+    PrintAt(3,9,"R  - Zeiten zuruecksetzen");
     PrintAt(30,7,"F8 - Ausgang");              // 65
 
 // Print Time Template 
     PrintAt(19,12,"Arbeitszeit");
     PrintAt(21,14,"Pause");
 
-    PrintAt(8,13,"[00:00:00]");
+    PrintAt(8,13," 00:00:00 ");
     PrintAt(23,13,"->");
-    PrintAt(31,13,"[00:00:00]");
+    PrintAt(31,13," 00:00:00 ");
 
-    PrintAt(8,15,"[00:00:00]");
+    PrintAt(8,15," 00:00:00 ");
     PrintAt(23,15,"->");
-    PrintAt(31,15,"[00:00:00]");
+    PrintAt(31,15," 00:00:00 ");
 
 // Print Time
     PrintTimes();
@@ -215,7 +233,7 @@ int main() {
     int c;
     while (1) {
           c = _getch();
-//          printf("%i",c);
+          // printf("%i",c);
         switch (c) {
             case 114: // R
                   strcpy(ARBEIT_START,"00:00:00");
@@ -225,7 +243,7 @@ int main() {
                   PrintTimes();
                   PrintAt(2,18,"Zeit auf 00:00:00 gesetzt.");
             break;
-            case 122: { // Z
+            case 97: { // Z
                   time_t t = time(NULL);
                   struct tm *tm_info = localtime(&t);
                   char buffer[9];
@@ -251,8 +269,7 @@ int main() {
                   SetTimeCursor();
             break;
             case 13://Enter
-                SaveToFile();
-                PrintAt(2,18,"Gespeichert.");
+
             break;
             case 59://F1
                 select = S_ARBEIT_START;
@@ -281,7 +298,7 @@ int main() {
             case 63://F5 
             // 1. 
             // 2. Run Time Registration Service   
-
+                Save();
             break;
             case 64://F6    
                 PrintAt(2,18,"Nicht implementiert        ");
